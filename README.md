@@ -68,33 +68,15 @@ flowchart TD
     PG[PostgreSQL]
     Redis[Redis Cache]
 
-    %% Обратный прокси направляет трафик на API Gateway
     Nginx --> APIGW
-
-    %% API Gateway двунаправленно обменивается данными с Weather API (REST API вызовы)
     APIGW <--> Weather
-
-    %% API Gateway однонаправленно отправляет логи в Logs (например, через логгер)
     APIGW --> Logs
-
-    %% API Gateway двунаправленно взаимодействует с внутренними API сервисами
     APIGW <--> APIServices
-
-    %% API Gateway предоставляет доступ к Swagger документации (однонаправленно)
     APIGW --> Swagger
-
-    %% API Gateway направляет команды на отправку уведомлений в Notifier
     APIGW --> Notifier
-
-    %% Scheduler инициирует задания через API Gateway
     Scheduler --> APIGW
-
-    %% API Services двунаправленно работают с базой данных PostgreSQL
     APIServices <--> PG
-
-    %% PostgreSQL обновляет Redis кэш (однонаправленно)
     PG --> Redis
-
 ```
 ---
 
@@ -106,9 +88,6 @@ flowchart TD
 - Handle REST API requests.
 - Validate data.
 - Perform CRUD operations for subscriptions.
-
-**Access:** http://35.207.129.35:3000
-
 **Endpoints:**
 - `GET /api/v1/weather?city={city}` — Retrieve weather data for a city.
 - `GET /api/v1/confirm/{token}` — Confirm a subscription.
@@ -122,16 +101,12 @@ Horizontal scaling via Docker.
 ---
 
 ### 4.2 Scheduler
-
-- **Library:** `@nestjs/schedule`
   - Send weather updates (hourly/daily)
   - Delete unconfirmed subscriptions (TTL: 5 minutes)
 
 ---
 
 ### 4.3 Notifier (Nodemailer)
-
-- **Library:** ```@nestjs-modules/mailer```
   - Send emails for subscription confirmation, unsubscription, and weather updates.
 
 ---
@@ -145,9 +120,6 @@ Horizontal scaling via Docker.
 ---
 
 ### 4.5 Documentation
-
-- **Library:** ```@nestjs/swagger```
-- **Access:** http://35.207.129.35:3000/api/docs
   - Interactive REST endpoint documentation.
   - Ability to test requests directly from the browser.
   - Automatically generated from NestJS decorators.
@@ -184,9 +156,12 @@ Horizontal scaling via Docker.
 ### 4.7 Security and Compliance
 
 - **Secret Management:** Store `WEATHER_API_KEY`, `EMAIL_USER`, and `EMAIL_PASSWORD` in `.env` and GitHub Secrets.
-  - Support unsubscription via `GET /api/unsubscribe/{token}`
+  - Support unsubscription via `GET /api/v1/unsubscribe/{token}`
   - Delete unconfirmed subscriptions after 5 minutes.
-- **TLS:** Deployed on Google Cloud with SSL tied to IP (35.207.129.35).
+- **TLS:** Deployed on Google Cloud with TLS tied to IP.
+Vulnerabilities:
+SQL Injection: Prevented by Prisma ORM.
+XSS: No user-generated HTML.
 
 ---
 
@@ -201,7 +176,43 @@ Horizontal scaling via Docker.
 ---
 
 ### 4.9 Logging
-
-- **Library:** ```nestjs-pino```
 - Structured, fast JSON logging for all services.
 - Supports log levels, request tracing, and performance metrics.
+
+---
+
+## 5. Deployment Architecture
+
+- **Reverse Proxy:** Nginx 
+- **API Gateway:** NestJS application (Docker container)
+- **Databases:** PostgreSQL (managed service or Docker container)
+- **Cache:** Redis (managed service or Docker container)
+- **Orchestration:** Docker Compose or Kubernetes (future)
+- **CI/CD:** GitHub Actions for automated build, test, and deployment
+
+---
+
+## 6. Testing Strategy
+
+- **Unit Testing:** Jest, 90%+ coverage for core services
+- **Integration Testing:** Tests with real PostgreSQL and Redis instances via Docker Compose
+- **End-to-End (E2E) Testing:** Full API flow coverage
+- **Automation:** All tests run automatically in the CI/CD pipeline
+
+---
+
+## 7. Future Enhancements
+
+- OAuth/JWT authentication for user accounts
+- Admin dashboard for managing subscriptions
+- Multi-language support
+- Mobile app frontend
+- Advanced analytics and reporting
+- Prometheus/Grafana integration for monitoring
+- Consistent hashing for cache sharding
+- Geo-distributed deployments for lower latency
+- Domain Name Purchase: Branded and user-friendly URL for accessing the service.
+- Frontend Improvements: Modern responsive UI/UX, dark mode support, and enhanced user interaction.
+
+
+
